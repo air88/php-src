@@ -16,6 +16,7 @@
    +----------------------------------------------------------------------+
 */
 
+#include "php_version.h"
 #include <ZendAccelerator.h>
 #include "zend_shared_alloc.h"
 #include "Zend/zend_execute.h"
@@ -963,7 +964,8 @@ static zend_lifetime_interval *zend_jit_sort_intervals(zend_lifetime_interval **
 		if (ival) {
 			if ((ival->range.start > last->range.start) ||
 			    (ival->range.start == last->range.start &&
-			     ival->range.end > last->range.end)) {
+			     ((!ival->hint && last->hint) ||
+			      ival->range.end > last->range.end))) {
 				last->list_next = ival;
 				last = ival;
 				ival->list_next = NULL;
@@ -977,7 +979,8 @@ static zend_lifetime_interval *zend_jit_sort_intervals(zend_lifetime_interval **
 						break;
 					} else if ((ival->range.start < (*p)->range.start) ||
 					           (ival->range.start == (*p)->range.start &&
-					            ival->range.end < (*p)->range.end)) {
+					            ((ival->hint && !(*p)->hint) ||
+					             ival->range.end < (*p)->range.end))) {
 						ival->list_next = *p;
 						*p = ival;
 						break;
@@ -2246,7 +2249,7 @@ static int zend_jit(const zend_op_array *op_array, zend_ssa *ssa, const zend_op 
 					} else if (ival->flags & ZREG_STORE) {
 						ZEND_ASSERT(ival->reg != ZREG_NONE);
 
-						if (!zend_jit_store_var(&dasm_state, ssa->var_info[phi->ssa_var].type, ssa->vars[phi->ssa_var].var, ival->reg)) {
+						if (!zend_jit_store_var(&dasm_state, ssa->var_info[phi->ssa_var].type, ssa->vars[phi->ssa_var].var, ival->reg, 1)) {
 							goto jit_failure;
 						}
 					}
@@ -2699,7 +2702,7 @@ static int zend_jit(const zend_op_array *op_array, zend_ssa *ssa, const zend_op 
 						}
 						if (!zend_jit_qm_assign(&dasm_state, opline,
 								OP1_INFO(), op1_addr, op1_def_addr,
-								RES_INFO(), RES_REG_ADDR())) {
+								-1, RES_INFO(), RES_REG_ADDR())) {
 							goto jit_failure;
 						}
 						goto done;

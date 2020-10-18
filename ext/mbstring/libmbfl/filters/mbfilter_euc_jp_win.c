@@ -69,7 +69,7 @@ const mbfl_encoding mbfl_encoding_eucjp_win = {
 	mbfl_no_encoding_eucjp_win,
 	"eucJP-win",
 	"EUC-JP",
-	(const char *(*)[])&mbfl_encoding_eucjp_win_aliases,
+	mbfl_encoding_eucjp_win_aliases,
 	mblen_table_eucjp,
 	MBFL_ENCTYPE_MBCS,
 	&vtbl_eucjpwin_wchar,
@@ -319,8 +319,6 @@ mbfl_filt_conv_wchar_eucjpwin(int c, mbfl_convert_filter *filter)
 			s1 = 0x2172;
 		} else if (c == 0xffe2) {	/* FULLWIDTH NOT SIGN */
 			s1 = 0x224c;
-		} else if (c == 0xff5e) {	/* FULLWIDTH TILDE */
-			s1 = 0x2141;
 		} else {
 			s1 = -1;
 			c1 = 0;
